@@ -81,6 +81,38 @@ const stars = (() => {
   return pts;
 })();
 
+// céu noturno: degradê azul-marinho (mais claro no horizonte, com brilho quente da cidade) + lua
+function makeNightSky(radius = 1000) {
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { uOpacity: { value: 1 } },
+    vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+    fragmentShader: `uniform float uOpacity; varying vec3 vP;
+      void main(){
+        float h = clamp(vP.y, -0.2, 1.0);
+        vec3 zen = vec3(0.012, 0.022, 0.06);
+        vec3 hor = vec3(0.075, 0.1, 0.18);
+        vec3 glow = vec3(0.16, 0.12, 0.13);
+        vec3 c = mix(hor, zen, pow(max(h, 0.0), 0.55));
+        c += glow * exp(-max(h, 0.0) * 14.0) * 0.45;
+        c = mix(c, vec3(0.01, 0.012, 0.02), smoothstep(0.0, -0.08, vP.y));
+        gl_FragColor = vec4(c, uOpacity);
+        #include <colorspace_fragment>
+      }`,
+    side: THREE.BackSide,
+    transparent: true,
+    depthWrite: false,
+    fog: false,
+  });
+  return new THREE.Mesh(new THREE.SphereGeometry(radius, 32, 16), mat);
+}
+const nightSky = makeNightSky();
+nightSky.renderOrder = -1;
+scene.add(nightSky);
+const MOON_DIR = new THREE.Vector3(0.62, 0.5, -0.6).normalize();
+const moon = new THREE.Mesh(new THREE.SphereGeometry(13, 24, 12), new THREE.MeshBasicMaterial({ color: 0xeef2ff, fog: false }));
+moon.position.copy(MOON_DIR).multiplyScalar(850).add(new THREE.Vector3(10, 0, 5));
+scene.add(moon);
+
 const sun = new THREE.DirectionalLight(0xffffff, 3);
 sun.castShadow = true;
 const sc = sun.shadow.camera;
@@ -205,22 +237,34 @@ function setHour(h, final = true) {
   skyU.mieDirectionalG.value = 0.8;
   sky.visible = elev > -9;
   stars.material.opacity = 0.85 * smooth(-3, -10, elev);
-  scene.background = elev > -9 ? null : new THREE.Color(0x070b16);
+  const nightK = smooth(2, -9, elev);
+  nightSky.visible = nightK > 0.001;
+  nightSky.material.uniforms.uOpacity.value = nightK;
+  moon.visible = elev < -3;
+  scene.background = elev > -9 ? null : new THREE.Color(0x03060f);
 
-  cA.set(0xc9d6e2).lerp(cB.set(0xd6a988), warm).lerp(cB.set(0x0a0f1c), 1 - day);
+  cA.set(0xc9d6e2).lerp(cB.set(0xd6a988), warm).lerp(cB.set(0x111a2e), 1 - day);
   scene.fog.color.copy(cA);
 
   const night = elev < -2;
-  sun.position.copy(sun.target.position).addScaledVector(night ? new THREE.Vector3(0.3, 1, 0.5).normalize() : sunDir, 60);
+  // à noite a "luz do sol" vira o luar (azulado, fraco, vindo da lua)
+  sun.position.copy(sun.target.position).addScaledVector(night ? MOON_DIR : sunDir, 60);
   sun.color.copy(cA.set(0xfff1e0).lerp(cB.set(0xff9a50), warm));
-  if (night) sun.color.set(0x8fa6d8);
-  sun.intensity = night ? 0.25 * dark : 3.4 * smooth(-2, 12, elev);
-  hemi.intensity = 0.1 + 0.15 * day;
-  hemi.color.copy(cA.set(0xeef0f2).lerp(cB.set(0xffc9a0), warm).lerp(cB.set(0x2b3a5a), 1 - day));
+  if (night) sun.color.set(0x9db4e6);
+  sun.intensity = night ? 0.5 * dark : 3.4 * smooth(-2, 12, elev);
+  hemi.intensity = 0.1 + 0.15 * day + 0.06 * dark;
+  hemi.color.copy(cA.set(0xeef0f2).lerp(cB.set(0xffc9a0), warm).lerp(cB.set(0x34466e), 1 - day));
+  hemi.groundColor.copy(cA.set(0x8a6f52).lerp(cB.set(0x241a12), 1 - day));
 
-  scene.environmentIntensity = 0.1 + 0.24 * day;
+  scene.environmentIntensity = 0.1 + 0.24 * day + 0.05 * dark;
   const interior = 0.55 + 0.45 * dark;
-  for (const l of world.nightLights) l.intensity = l.userData.base * (l.userData.outdoor ? dark : interior);
+  for (const l of world.nightLights) {
+    const u = l.userData;
+    // externas e abajures só acendem à noite; luzes de teto dos quartos ficam mais baixas à noite (clima)
+    const k = u.outdoor || u.nightOnly ? dark : interior * (1 - (1 - (u.nightScale ?? 1)) * dark);
+    l.intensity = u.base * k;
+    l.visible = l.intensity > 0.001;
+  }
   for (const e of world.nightEmissive) e.mat.emissiveIntensity = Math.max(e.day || 0, e.on * dark);
   if (M) {
     M.ledWarm.emissiveIntensity = 2.2 * dark;
@@ -237,7 +281,7 @@ function setHour(h, final = true) {
     const key = elev < -6 ? 'noite' : (Math.round(h * 2) / 2).toFixed(1);
     if (!envCache.has(key)) {
       const envScene = new THREE.Scene();
-      if (key === 'noite') envScene.background = new THREE.Color(0x0b1224);
+      if (key === 'noite') envScene.add(makeNightSky(50));
       else {
         const s2 = new Sky();
         s2.scale.setScalar(100);

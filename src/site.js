@@ -1,6 +1,6 @@
 // Terreno, rua, garagem, piscina, deck, área gourmet, jardim e vizinhança
 import * as THREE from 'three';
-import { world, boxMM, box, place } from './geo.js';
+import { world, boxMM, box, place, cyl } from './geo.js';
 import * as F from './furniture.js';
 import { textTexture } from './textures.js';
 import { FLOOR2, CEIL1 } from './plan.js';
@@ -147,7 +147,7 @@ export function buildSite(scene, M) {
     spot.position.set(px1 - 0.002, -0.5, z);
     g.add(spot);
   }
-  outdoorLight(scene, new THREE.PointLight(0x7fe3ff, 14, 5, 1.5), [(px0 + px1) / 2, -0.6, (pz0 + pz1) / 2]);
+  outdoorLight(scene, new THREE.PointLight(0x7fe3ff, 7, 4, 1.7), [(px0 + px1) / 2, -0.6, (pz0 + pz1) / 2]);
   // espreguiçadeiras e vasos
   place(g, F.lounger(), 18.7, 0.02, 4.65, PI / 2);
   place(g, F.lounger(), 18.7, 0.02, 0.4, PI / 2);
@@ -175,8 +175,29 @@ export function buildSite(scene, M) {
   outdoorLight(scene, new THREE.SpotLight(0xffd29a, 60, 7, 0.5, 0.8, 1.2), [2.0, 0.1, 7.4], [1.3, 4, 7.95]);
   // corredor
   for (const x of [3, 9, 15]) outdoorLight(scene, new THREE.PointLight(0xffc98a, 5, 5, 1.6), [x, 0.5, 9.4]);
-  // deck
-  outdoorLight(scene, new THREE.PointLight(0xffc98a, 8, 7, 1.6), [17.6, 2.5, 4.6]);
+  // arandelas na parede dos fundos (deck) e balizadores do deck
+  for (const z of [0.25, 4.35]) {
+    boxMM(g, 17.3, 2.05, z - 0.06, 17.36, 2.35, z + 0.06, M.blackMetal, { cast: false });
+    boxMM(g, 17.36, 2.08, z - 0.04, 17.37, 2.32, z + 0.04, M.ledWarm, { cast: false });
+    outdoorLight(scene, new THREE.SpotLight(0xffc285, 9, 6, 1.1, 0.9, 1.5), [17.45, 2.3, z], [17.6, 0, z]);
+  }
+  for (const [x, z] of [[17.35, 0.6], [17.35, 3.9], [19.85, 0.6], [19.85, 4.9]]) boxMM(g, x - 0.04, 0.02, z - 0.04, x + 0.04, 0.09, z + 0.04, M.ledWarm, { cast: false });
+
+  // balizadores do passeio da frente (só brilho, sem custo de luz)
+  for (const x of [0.6, 1.7, 2.8, 3.9]) {
+    cyl(g, 0.045, 0.05, 0.45, M.blackMetal, x, 0.225, 7.45, { seg: 10 });
+    cyl(g, 0.04, 0.04, 0.08, M.ledWarm, x, 0.4, 7.45, { seg: 10, cast: false });
+  }
+  outdoorLight(scene, new THREE.PointLight(0xffc285, 3, 4, 1.8), [2.3, 0.45, 7.0]);
+
+  // postes de iluminação da rua do condomínio
+  for (const z of [-4.5, 14.5]) {
+    cyl(g, 0.06, 0.08, 6, M.blackMetal, -1.6, 3, z, { seg: 10 });
+    boxMM(g, -2.6, 5.9, z - 0.06, -1.55, 6.0, z + 0.06, M.blackMetal);
+    boxMM(g, -2.75, 5.82, z - 0.12, -2.25, 5.9, z + 0.12, M.blackMetal);
+    boxMM(g, -2.73, 5.8, z - 0.1, -2.27, 5.82, z + 0.1, M.ledWarm, { cast: false });
+    outdoorLight(scene, new THREE.SpotLight(0xffbf80, 55, 18, 0.95, 0.85, 1.6), [-2.5, 5.75, z], [-1.5, 0, z]);
+  }
 
   // ---------------- vizinhança (contexto do condomínio) ----------------
   const nb = new THREE.Group();
@@ -216,8 +237,30 @@ function verticalGarden(g, M, x, y0, z0, y1, z1) {
 
 function neighbors(g, M) {
   const glassDark = new THREE.MeshStandardMaterial({ color: 0x1d2328, roughness: 0.1, metalness: 0.6 });
-  const warmWin = new THREE.MeshStandardMaterial({ color: 0x2a2520, emissive: 0xffc27a, emissiveIntensity: 0 });
-  world.nightEmissive.push({ mat: warmWin, on: 0.9 });
+  // janela acesa: brilho quente no centro, cortina nas laterais e caixilho (em vez de um quadrado chapado)
+  const winTex = (r, g2, b) => {
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const x = c.getContext('2d');
+    const grd = x.createRadialGradient(64, 80, 6, 64, 70, 80);
+    grd.addColorStop(0, `rgb(${r},${g2},${b})`);
+    grd.addColorStop(1, `rgb(${r * 0.35 | 0},${g2 * 0.3 | 0},${b * 0.3 | 0})`);
+    x.fillStyle = grd;
+    x.fillRect(0, 0, 128, 128);
+    x.fillStyle = 'rgba(40,30,22,0.55)';
+    x.fillRect(0, 0, 22, 128);
+    x.fillRect(106, 0, 22, 128);
+    x.fillStyle = '#0c0c0c';
+    x.fillRect(61, 0, 6, 128);
+    x.fillRect(0, 0, 128, 5);
+    x.fillRect(0, 123, 128, 5);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  };
+  const wt = winTex(255, 196, 130);
+  const warmWin = new THREE.MeshStandardMaterial({ color: 0x1a1612, map: wt, emissive: 0xffffff, emissiveMap: wt, emissiveIntensity: 0, roughness: 0.2 });
+  world.nightEmissive.push({ mat: warmWin, on: 0.55 });
   const house = (x0, z0, w, d, h, mat, flip = false) => {
     boxMM(g, x0, 0, z0, x0 + w, h, z0 + d, mat, { collide: true });
     boxMM(g, x0 - 0.05, h, z0 - 0.05, x0 + w + 0.05, h + 0.3, z0 + d + 0.05, M.concreteDark, { collide: false });

@@ -56,6 +56,7 @@ A qualidade **Automática** baixa ou sobe os gráficos conforme o computador agu
 | --- | --- |
 | ![Sala à noite](assets/telas/sala-noite.jpg) | ![Cozinha](assets/telas/cozinha-dia.jpg) |
 | ![Piscina](assets/telas/piscina.jpg) | ![Mezanino](assets/telas/mezanino.jpg) |
+| ![Fachada à noite](assets/telas/fachada-noite.jpg) | |
 
 ## O que foi modelado
 

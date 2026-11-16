@@ -209,36 +209,37 @@ export function furnish(scene, M) {
   const lamps = [
     // [x, y, z, intensidade, alcance]
     [5.6, 2.55, 0.9, 1.2, 3], // escritório
-    [7.8, 5.2, 2.0, 6, 12], // sala (pé-direito duplo)
+    [7.8, 5.2, 2.0, 6, 12, 0.7], // sala (pé-direito duplo)
     [5.6, 5.2, 2.9, 1.6, 6], // hall
     [7.4, 2.55, 4.6, 1.4, 5], // corredor
     [10.6, 2.55, 4.6, 1.2, 5],
     [14.4, 2.55, 1.9, 2.6, 7], // cozinha
     [15.6, 2.4, 3.6, 1.6, 5], // jantar
     [14.6, 2.55, 5.5, 1.2, 5],
-    [6.5, 2.55, 6.9, 2.0, 5], // quarto 1
+    [6.5, 2.55, 6.9, 2.0, 5, 0.45], // quarto 1
     [8.6, 2.55, 7.5, 0.9, 3], // banho social
-    [10.7, 2.55, 6.9, 2.0, 5], // quarto 2
+    [10.7, 2.55, 6.9, 2.0, 5, 0.45], // quarto 2
     [12.8, 2.55, 7.5, 0.7, 3], // lavabo
     [14.15, 2.55, 7.5, 0.6, 3], // despensa
     [16.0, 2.55, 7.5, 1.0, 4], // lavanderia
     [18.6, 2.55, 7.0, 2.0, 6], // gourmet
     [7.0, 5.5, 4.55, 1.6, 6], // circulação
     [11.4, 5.5, 4.2, 1.4, 5],
-    [8.1, 5.5, 6.9, 2.2, 5], // suíte master
+    [8.1, 5.5, 6.9, 2.2, 5, 0.45], // suíte master
     [5.75, 5.5, 6.5, 1.0, 3], // banho master
     [10.7, 5.5, 7.3, 1.0, 4], // closet
     [12.2, 5.5, 7.2, 0.8, 3], // recanto
-    [14.2, 5.5, 5.8, 2.0, 5], // suíte Isabela
+    [14.2, 5.5, 5.8, 2.0, 5, 0.45], // suíte Isabela
     [14.7, 5.5, 7.9, 0.8, 3], // banho Isabela
-    [14.6, 5.5, 2.1, 2.0, 5], // estar íntimo
+    [14.6, 5.5, 2.1, 2.0, 5, 0.6], // estar íntimo
     [16.45, 5.5, 4.2, 1.4, 6], // varanda
   ];
   const disc = new THREE.CircleGeometry(0.055, 20);
-  for (const [x, y, z, I, d] of lamps) {
+  for (const [x, y, z, I, d, ns] of lamps) {
     const l = new THREE.PointLight(0xffd2a0, I, d, 1.6);
     l.position.set(x, y, z);
     l.userData.base = I;
+    if (ns) l.userData.nightScale = ns;
     const parent = y > 4 ? up : scene;
     parent.add(l);
     world.nightLights.push(l);
@@ -256,5 +257,26 @@ export function furnish(scene, M) {
       }
     }
   }
+  // abajures e luminárias de piso: só à noite, luz quente e baixa (2700 K) perto da cabeceira
+  const lampLights = [
+    // [x, y, z, intensidade, alcance, grupo]
+    [6.4, 0.95, 8.05, 1.6, 3.2, g], // quarto 1
+    [10.7, 0.95, 8.05, 1.6, 3.2, g], // quarto 2
+    [8.1, Y + 0.95, 8.05, 1.8, 3.4, up], // suíte master
+    [13.0, Y + 0.95, 6.2, 1.5, 3.2, up], // suíte Isabela
+    [8.75, 1.5, 3.5, 1.6, 4, g], // luminária da sala
+    [11.95, Y + 1.5, 8.25, 1.0, 3, up], // recanto de leitura
+  ];
+  for (const [x, y, z, I, d, parent] of lampLights) {
+    const l = new THREE.PointLight(0xffb978, I, d, 1.7);
+    l.position.set(x, y, z);
+    l.userData.base = I;
+    l.userData.nightOnly = true;
+    parent.add(l);
+    world.nightLights.push(l);
+  }
+  // fitas de LED (sanca) atrás da TV da sala e sob a bancada da cozinha
+  box(g, 2.1, 0.02, 0.03, M.ledWarm, 7.3, 2.62, 3.8, { cast: false });
+  box(g, 0.02, 0.02, 2.9, M.ledWarm, 13.75, 0.12, 0.76, { ry: Math.PI / 2, cast: false });
   return g;
 }

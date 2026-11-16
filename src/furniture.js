@@ -121,7 +121,7 @@ export function floorLamp() {
   const shade = cyl(g, 0.17, 0.22, 0.3, M.linen, 0, 1.55, 0, { open: true });
   shade.material = M.linen.clone();
   shade.material.side = THREE.DoubleSide;
-  shade.material.emissive = new THREE.Color(0xffd7a0);
+  shade.material.emissive = new THREE.Color(0xffa95e);
   shade.material.emissiveIntensity = 0.0;
   world.nightEmissive.push({ mat: shade.material, on: 0.6 });
   return g;
@@ -344,7 +344,7 @@ export function nightstand(lamp = true) {
     const shade = cyl(g, 0.12, 0.15, 0.2, M.linen, 0.08, 0.86, -0.05, { open: true });
     shade.material = M.linen.clone();
     shade.material.side = THREE.DoubleSide;
-    shade.material.emissive = new THREE.Color(0xffd29a);
+    shade.material.emissive = new THREE.Color(0xffa95e);
     shade.material.emissiveIntensity = 0;
     world.nightEmissive.push({ mat: shade.material, on: 0.7 });
     box(g, 0.16, 0.03, 0.22, M.book[1], -0.12, 0.555, 0.05);
