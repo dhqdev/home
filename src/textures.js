@@ -409,3 +409,99 @@ export function tvScreen() {
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
+
+// ---------- Folhagem (texturas com transparência) ----------
+function alphaTex(c) {
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  return t;
+}
+
+// Folha larga tropical (tipo costela-de-adão / bananeira), base embaixo, ponta em cima
+export function leafTexture({ base = [52, 98, 40], w = 256, h = 512 } = {}) {
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const x = c.getContext('2d');
+  const grd = x.createLinearGradient(0, 0, w, 0);
+  const [r, g, b] = base;
+  grd.addColorStop(0, `rgb(${r * 0.7},${g * 0.75},${b * 0.7})`);
+  grd.addColorStop(0.5, `rgb(${r * 1.15},${g * 1.12},${b * 1.05})`);
+  grd.addColorStop(1, `rgb(${r * 0.72},${g * 0.78},${b * 0.7})`);
+  x.fillStyle = grd;
+  x.beginPath();
+  x.moveTo(w / 2, h * 0.99);
+  x.bezierCurveTo(w * 0.02, h * 0.75, w * 0.0, h * 0.3, w / 2, h * 0.01);
+  x.bezierCurveTo(w * 1.0, h * 0.3, w * 0.98, h * 0.75, w / 2, h * 0.99);
+  x.fill();
+  // nervuras
+  x.strokeStyle = `rgba(${Math.min(255, r * 2.2)},${Math.min(255, g * 1.9)},${Math.min(255, b * 1.6)},0.75)`;
+  x.lineWidth = 4;
+  x.beginPath();
+  x.moveTo(w / 2, h);
+  x.lineTo(w / 2, h * 0.03);
+  x.stroke();
+  x.lineWidth = 1.5;
+  x.strokeStyle = 'rgba(20,40,15,0.35)';
+  for (let i = 1; i < 16; i++) {
+    const y = h * (0.94 - i * 0.056);
+    for (const s of [-1, 1]) {
+      x.beginPath();
+      x.moveTo(w / 2, y);
+      x.quadraticCurveTo(w / 2 + s * w * 0.22, y - h * 0.03, w / 2 + s * w * 0.46, y - h * 0.07);
+      x.stroke();
+    }
+  }
+  return alphaTex(c);
+}
+
+// Folha de palmeira (pinada): ráquis no meio e folíolos inclinados
+export function frondTexture({ w = 256, h = 1024 } = {}) {
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const x = c.getContext('2d');
+  x.lineCap = 'round';
+  for (let i = 0; i < 46; i++) {
+    const t = i / 45; // 0 = base, 1 = ponta
+    const y = h * (0.97 - t * 0.94);
+    const len = w * 0.48 * Math.sin(Math.PI * (0.12 + t * 0.85)) + 6;
+    for (const s of [-1, 1]) {
+      const gg = 85 + Math.round(rand() * 40);
+      x.strokeStyle = `rgb(${30 + rand() * 20},${gg},${25 + rand() * 15})`;
+      x.lineWidth = 7 - t * 3;
+      x.beginPath();
+      x.moveTo(w / 2, y);
+      x.quadraticCurveTo(w / 2 + s * len * 0.5, y - h * 0.012, w / 2 + s * len, y - h * 0.045);
+      x.stroke();
+    }
+  }
+  x.strokeStyle = 'rgb(120,128,70)';
+  x.lineWidth = 6;
+  x.beginPath();
+  x.moveTo(w / 2, h);
+  x.lineTo(w / 2, h * 0.02);
+  x.stroke();
+  return alphaTex(c);
+}
+
+// Cacho de folhinhas para copas de árvores e arbustos
+export function foliageTexture({ base = [58, 98, 42], size = 256, n = 70 } = {}) {
+  const [c, x] = canvas(size);
+  for (let i = 0; i < n; i++) {
+    const px = size * (0.12 + rand() * 0.76), py = size * (0.12 + rand() * 0.76);
+    const dx = px - size / 2, dy = py - size / 2;
+    if (dx * dx + dy * dy > (size * 0.42) ** 2) continue;
+    const k = 0.65 + rand() * 0.6;
+    x.fillStyle = `rgb(${clamp(base[0] * k)},${clamp(base[1] * k)},${clamp(base[2] * k)})`;
+    x.save();
+    x.translate(px, py);
+    x.rotate(rand() * Math.PI * 2);
+    x.beginPath();
+    x.ellipse(0, 0, size * 0.028, size * 0.075, 0, 0, Math.PI * 2);
+    x.fill();
+    x.restore();
+  }
+  return alphaTex(c);
+}

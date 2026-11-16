@@ -47,14 +47,31 @@
   #orbit-tools { position: absolute; left: 50%; top: 16px; transform: translateX(-50%); display: flex; gap: 8px; padding: 8px; pointer-events: auto; flex-wrap: wrap; justify-content: center; }
   #orbit-tools .tip { align-self: center; color: var(--muted); font-size: 13px; padding: 0 6px; }
 
-  #teleport { position: fixed; inset: 0; z-index: 25; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.4); }
-  #teleport .card { width: min(760px, calc(100% - 32px)); max-height: calc(100% - 40px); overflow: auto; padding: 22px 24px; }
-  #teleport h2 { margin: 0 0 6px; }
-  #teleport h3 { grid-column: 1 / -1; margin: 14px 0 2px; font-size: 13px; text-transform: uppercase; letter-spacing: .1em; color: var(--accent); }
-  #tp-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; }
-  #tp-list button { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 2px; }
-  #tp-list small { color: var(--muted); }
-  @media (max-width: 700px) { #minimap-wrap { width: 180px; } #help { display: none; } }
+  #menu { position: fixed; inset: 0; z-index: 25; display: flex; align-items: center; justify-content: center; background: rgba(6,6,8,.45); }
+  #menu .card { width: min(980px, calc(100% - 32px)); max-height: calc(100% - 32px); overflow: auto; padding: 24px 26px 20px; }
+  #menu header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  #menu h1 { margin: 0; font-size: 26px; font-weight: 600; }
+  #menu .sub { color: var(--muted); margin: 4px 0 16px; font-size: 14px; }
+  #version { color: var(--muted); font-size: 12px; }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+  .actions button { padding: 12px 20px; font-size: 15px; }
+  .grid { display: grid; grid-template-columns: 1.35fr 1fr; gap: 18px; }
+  @media (max-width: 820px) { .grid { grid-template-columns: 1fr; } }
+  section { background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.07); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+  section h2 { margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--accent); font-weight: 700; }
+  #tp-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 7px; }
+  #tp-list h4 { grid-column: 1 / -1; margin: 6px 0 0; font-size: 13px; color: var(--muted); font-weight: 600; }
+  #tp-list button { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 1px; padding: 8px 11px; }
+  #tp-list small { color: var(--muted); font-size: 11.5px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chips button { padding: 7px 11px; font-size: 13px; }
+  .chips button.on, #music-toggle.on { background: var(--accent); border-color: var(--accent); color: #1b1208; font-weight: 700; }
+  .row { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 14px; color: var(--muted); }
+  .row b { color: var(--fg); font-variant-numeric: tabular-nums; min-width: 48px; }
+  input[type=range] { flex: 1; accent-color: var(--accent); }
+  #update-status { margin-top: 8px; font-size: 13px; color: var(--muted); min-height: 18px; }
+  #lock-hint { position: fixed; left: 50%; bottom: 80px; transform: translateX(-50%); padding: 8px 14px; font-size: 13px; z-index: 6; pointer-events: none; }
+  @media (max-width: 700px) { #minimap-wrap { width: 180px; } }
 </style>
 </head>
 <body>
@@ -64,35 +81,73 @@
     <div id="loading-status">Carregando...</div>
   </div>
 
-  <div id="start" class="hidden">
+  <div id="menu" class="hidden">
     <div class="card panel">
-      <h1 id="start-title">Casa 43 — Passeio Virtual</h1>
-      <p class="sub">Residência contemporânea · terreno 10 x 20 m · 2 pavimentos · piscina e área gourmet</p>
-      <div class="keys">
-        <span><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></span><span>andar (ou as setas)</span>
-        <span><kbd>Mouse</kbd></span><span>olhar em volta</span>
-        <span><kbd>Shift</kbd></span><span>andar mais rápido</span>
-        <span><kbd>E</kbd> / clique</span><span>abrir e fechar portas</span>
-        <span><kbd>T</kbd></span><span>ir direto para um cômodo</span>
-        <span><kbd>L</kbd></span><span>dia / entardecer / noite</span>
-        <span><kbd>V</kbd></span><span>alternar maquete 3D e caminhada</span>
-        <span><kbd>M</kbd></span><span>aumentar o mapa</span>
-        <span><kbd>Q</kbd></span><span>qualidade gráfica (se ficar lento)</span>
-        <span><kbd>Esc</kbd></span><span>pausar / soltar o mouse</span>
-      </div>
+      <header><h1 id="menu-title">Casa 43 — Passeio Virtual</h1><span id="version"></span></header>
+      <p class="sub">Terreno 10 x 20 m · 2 pavimentos · sala com pé-direito duplo · piscina e área gourmet</p>
       <div class="actions">
-        <button id="btn-walk" class="primary">Entrar na casa</button>
+        <button id="btn-continue" class="primary">Entrar na casa</button>
         <button id="btn-orbit">Ver maquete 3D</button>
-        <button id="btn-tp">Ir para um cômodo</button>
+        <button id="btn-quit" class="hidden">Sair do programa</button>
       </div>
-    </div>
-  </div>
-
-  <div id="teleport" class="hidden">
-    <div class="card panel">
-      <h2>Ir para…</h2>
-      <div id="tp-list"></div>
-      <div style="margin-top:16px;text-align:right"><button id="tp-close">Fechar</button></div>
+      <div class="grid">
+        <div>
+          <section>
+            <h2>Ir para um cômodo</h2>
+            <div id="tp-list"></div>
+          </section>
+          <section>
+            <h2>Como andar</h2>
+            <div class="keys">
+              <span><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></span><span>andar (ou as setas; ← → giram)</span>
+              <span><kbd>Mouse</kbd></span><span>olhar (clique na tela para travar, ou arraste)</span>
+              <span><kbd>Shift</kbd></span><span>andar mais rápido</span>
+              <span><kbd>E</kbd> / clique</span><span>abrir e fechar a porta que você está olhando</span>
+              <span><kbd>L</kbd></span><span>trocar o horário (manhã → noite)</span>
+              <span><kbd>V</kbd></span><span>maquete 3D / caminhada</span>
+              <span><kbd>M</kbd></span><span>aumentar o mapa</span>
+              <span><kbd>Esc</kbd></span><span>abrir este menu</span>
+            </div>
+          </section>
+        </div>
+        <div>
+          <section>
+            <h2>Horário do dia</h2>
+            <div class="chips">
+              <button data-hour="8">Manhã</button>
+              <button data-hour="12">Meio-dia</button>
+              <button data-hour="16">Tarde</button>
+              <button data-hour="18">Pôr do sol</button>
+              <button data-hour="21">Noite</button>
+            </div>
+            <div class="row"><b id="hour-label">16:00</b><input id="hour" type="range" min="6" max="23" step="0.25" value="16" /></div>
+          </section>
+          <section>
+            <h2>Qualidade gráfica</h2>
+            <div class="chips">
+              <button data-quality="auto">Automática</button>
+              <button data-quality="ultra">Ultra</button>
+              <button data-quality="alta">Alta</button>
+              <button data-quality="media">Média</button>
+              <button data-quality="baixa">Baixa</button>
+            </div>
+            <div class="row"><span id="quality-now"></span></div>
+          </section>
+          <section>
+            <h2>Música de fundo</h2>
+            <div class="row" style="margin-top:0"><button id="music-toggle">Ligada</button><input id="volume" type="range" min="0" max="1" step="0.01" /></div>
+          </section>
+          <section>
+            <h2>Mouse</h2>
+            <div class="row" style="margin-top:0"><span>Sensibilidade</span><input id="sens" type="range" min="0.3" max="2.5" step="0.05" /></div>
+          </section>
+          <section>
+            <h2>Atualizações</h2>
+            <button id="btn-update">Buscar atualizações</button>
+            <div id="update-status"></div>
+          </section>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -104,19 +159,15 @@
       <button id="btn-roof">Tirar a cobertura</button>
       <button id="btn-nb">Ocultar vizinhos</button>
       <button id="btn-walk2" class="primary">Caminhar</button>
-      <span class="tip">Arraste para girar · role para zoom · duplo clique para entrar naquele ponto</span>
+      <span class="tip">Arraste para girar · role para zoom · duplo clique no piso para andar dali</span>
     </div>
     <div id="toolbar">
-      <button id="btn-mode">☀️ Dia</button>
-      <button id="btn-quality">Qualidade: alta</button>
-      <button id="btn-orbit2">Maquete</button>
-    </div>
-    <div id="help" class="panel hidden">
-      <b>Atalhos</b><br />WASD andar · Shift correr · E porta<br />T cômodos · L luz · V maquete · M mapa · Q qualidade
+      <button id="btn-menu">☰ Menu (Esc)</button>
     </div>
   </div>
   <div id="crosshair" class="hidden"></div>
   <div id="door-hint" class="panel hidden"></div>
+  <div id="lock-hint" class="panel hidden">Clique na tela para olhar com o mouse (ou arraste)</div>
 <!--BUNDLE-->
 </body>
 </html>

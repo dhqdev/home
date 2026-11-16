@@ -1,0 +1,7 @@
+{
+  "name": "casa-3d",
+  "productName": "Casa 3D",
+  "version": "2.0.0",
+  "description": "Passeio virtual 3D da Casa 43",
+  "main": "main.cjs"
+}

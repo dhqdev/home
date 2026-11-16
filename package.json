@@ -1,6 +1,6 @@
 {
   "name": "casa-3d",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "description": "Passeio virtual 3D da casa (planta do condomínio)",
   "type": "module",

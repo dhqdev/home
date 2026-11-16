@@ -4,6 +4,7 @@ import * as esbuild from 'esbuild';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 
 const watch = process.argv.includes('--watch');
+const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
 
 const inline = {
   name: 'inline-html',
@@ -15,6 +16,7 @@ const inline = {
       const html = tpl.replace('<!--BUNDLE-->', () => `<script>${js.replace(/<\/script/g, '<\\/script')}</script>`);
       mkdirSync('dist', { recursive: true });
       writeFileSync('dist/index.html', html);
+      writeFileSync('dist/version.json', JSON.stringify({ version: pkg.version }) + '\n');
       console.log(`dist/index.html gerado (${(html.length / 1024).toFixed(0)} KB)`);
     });
   },
@@ -30,6 +32,7 @@ const ctx = await esbuild.context({
   outfile: 'dist/bundle.js',
   plugins: [inline],
   legalComments: 'none',
+  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
 });
 
 if (watch) {
