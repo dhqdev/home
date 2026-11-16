@@ -1,0 +1,15 @@
+{
+  "name": "casa-3d",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Passeio virtual 3D da casa (planta do condomínio)",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs --watch"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "three": "0.170.0"
+  }
+}

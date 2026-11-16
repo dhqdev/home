@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Casa 43 — Passeio Virtual 3D</title>
+<style>
+  :root { --bg: rgba(18, 18, 20, 0.78); --fg: #f4efe8; --accent: #e09a4f; --muted: #b9b1a6; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0d0d0f; color: var(--fg); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  canvas { display: block; }
+  .hidden { display: none !important; }
+  .panel { background: var(--bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; }
+  button { font: inherit; color: var(--fg); background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); border-radius: 10px; padding: 9px 14px; cursor: pointer; transition: background .15s; }
+  button:hover { background: rgba(255,255,255,0.18); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #1b1208; font-weight: 700; }
+  button.primary:hover { background: #f0ac62; }
+
+  #loading, #start { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 20; }
+  #loading { background: radial-gradient(circle at 50% 40%, #2a2420, #0d0d0f 70%); flex-direction: column; gap: 14px; }
+  #loading h1 { margin: 0; font-weight: 300; letter-spacing: .08em; }
+  #loading .bar { width: 220px; height: 3px; background: rgba(255,255,255,.1); overflow: hidden; border-radius: 3px; }
+  #loading .bar::after { content: ""; display: block; width: 40%; height: 100%; background: var(--accent); animation: load 1.1s infinite ease-in-out; }
+  @keyframes load { 0% { transform: translateX(-100%); } 100% { transform: translateX(260%); } }
+  #loading-status { color: var(--muted); font-size: 14px; }
+
+  #start { background: rgba(0,0,0,0.35); }
+  #start .card { width: min(640px, calc(100% - 32px)); padding: 28px 30px; }
+  #start h1 { margin: 0 0 4px; font-size: 28px; font-weight: 600; }
+  #start .sub { color: var(--muted); margin: 0 0 18px; }
+  #start .actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 18px 0 6px; }
+  #start .actions button { padding: 12px 18px; font-size: 15px; }
+  .keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 14px; color: var(--muted); }
+  kbd { display: inline-block; min-width: 22px; padding: 2px 6px; border-radius: 6px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); color: var(--fg); font: 600 12px ui-monospace, monospace; text-align: center; }
+
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+  #room { position: absolute; left: 16px; top: 16px; padding: 10px 16px; }
+  #room-name { font-size: 18px; font-weight: 600; }
+  #room-size { color: var(--muted); font-size: 13px; }
+  #toolbar { position: absolute; left: 16px; bottom: 16px; display: flex; gap: 8px; pointer-events: auto; flex-wrap: wrap; max-width: calc(100% - 32px); }
+  #minimap-wrap { position: absolute; right: 16px; top: 16px; width: 300px; overflow: hidden; border-radius: 12px; border: 1px solid rgba(255,255,255,.12); transition: width .2s; }
+  #minimap-wrap.big { width: min(720px, 60vw); }
+  #minimap { width: 100%; display: block; }
+  #crosshair { position: fixed; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: rgba(255,255,255,.85); box-shadow: 0 0 0 2px rgba(0,0,0,.25); z-index: 6; pointer-events: none; }
+  #door-hint { position: fixed; left: 50%; top: calc(50% + 28px); transform: translateX(-50%); padding: 6px 12px; font-size: 13px; z-index: 6; }
+  #help { position: absolute; right: 16px; bottom: 16px; padding: 12px 16px; font-size: 13px; }
+  #orbit-tools { position: absolute; left: 50%; top: 16px; transform: translateX(-50%); display: flex; gap: 8px; padding: 8px; pointer-events: auto; flex-wrap: wrap; justify-content: center; }
+  #orbit-tools .tip { align-self: center; color: var(--muted); font-size: 13px; padding: 0 6px; }
+
+  #teleport { position: fixed; inset: 0; z-index: 25; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.4); }
+  #teleport .card { width: min(760px, calc(100% - 32px)); max-height: calc(100% - 40px); overflow: auto; padding: 22px 24px; }
+  #teleport h2 { margin: 0 0 6px; }
+  #teleport h3 { grid-column: 1 / -1; margin: 14px 0 2px; font-size: 13px; text-transform: uppercase; letter-spacing: .1em; color: var(--accent); }
+  #tp-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; }
+  #tp-list button { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 2px; }
+  #tp-list small { color: var(--muted); }
+  @media (max-width: 700px) { #minimap-wrap { width: 180px; } #help { display: none; } }
+</style>
+</head>
+<body>
+  <div id="loading">
+    <h1>CASA 43</h1>
+    <div class="bar"></div>
+    <div id="loading-status">Carregando...</div>
+  </div>
+
+  <div id="start" class="hidden">
+    <div class="card panel">
+      <h1 id="start-title">Casa 43 — Passeio Virtual</h1>
+      <p class="sub">Residência contemporânea · terreno 10 x 20 m · 2 pavimentos · piscina e área gourmet</p>
+      <div class="keys">
+        <span><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></span><span>andar (ou as setas)</span>
+        <span><kbd>Mouse</kbd></span><span>olhar em volta</span>
+        <span><kbd>Shift</kbd></span><span>andar mais rápido</span>
+        <span><kbd>E</kbd> / clique</span><span>abrir e fechar portas</span>
+        <span><kbd>T</kbd></span><span>ir direto para um cômodo</span>
+        <span><kbd>L</kbd></span><span>dia / entardecer / noite</span>
+        <span><kbd>V</kbd></span><span>alternar maquete 3D e caminhada</span>
+        <span><kbd>M</kbd></span><span>aumentar o mapa</span>
+        <span><kbd>Q</kbd></span><span>qualidade gráfica (se ficar lento)</span>
+        <span><kbd>Esc</kbd></span><span>pausar / soltar o mouse</span>
+      </div>
+      <div class="actions">
+        <button id="btn-walk" class="primary">Entrar na casa</button>
+        <button id="btn-orbit">Ver maquete 3D</button>
+        <button id="btn-tp">Ir para um cômodo</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="teleport" class="hidden">
+    <div class="card panel">
+      <h2>Ir para…</h2>
+      <div id="tp-list"></div>
+      <div style="margin-top:16px;text-align:right"><button id="tp-close">Fechar</button></div>
+    </div>
+  </div>
+
+  <div id="hud" class="hidden">
+    <div id="room" class="panel"><div id="room-name"></div><div id="room-size"></div></div>
+    <div id="minimap-wrap"><canvas id="minimap"></canvas></div>
+    <div id="orbit-tools" class="panel hidden">
+      <button id="btn-upper">Ver só o térreo</button>
+      <button id="btn-roof">Tirar a cobertura</button>
+      <button id="btn-nb">Ocultar vizinhos</button>
+      <button id="btn-walk2" class="primary">Caminhar</button>
+      <span class="tip">Arraste para girar · role para zoom · duplo clique para entrar naquele ponto</span>
+    </div>
+    <div id="toolbar">
+      <button id="btn-mode">☀️ Dia</button>
+      <button id="btn-quality">Qualidade: alta</button>
+      <button id="btn-orbit2">Maquete</button>
+    </div>
+    <div id="help" class="panel hidden">
+      <b>Atalhos</b><br />WASD andar · Shift correr · E porta<br />T cômodos · L luz · V maquete · M mapa · Q qualidade
+    </div>
+  </div>
+  <div id="crosshair" class="hidden"></div>
+  <div id="door-hint" class="panel hidden"></div>
+<!--BUNDLE-->
+</body>
+</html>
